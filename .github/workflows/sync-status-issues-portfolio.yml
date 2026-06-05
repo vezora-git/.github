@@ -1,57 +1,43 @@
 name: Sincronizar Status com o Portfolio
 
 on:
-  project_item:
-    types: [edited]
+  project_card:
+    types: [moved] # Dispara de forma estável quando o card é arrastado de coluna
 
 jobs:
   sync-status:
     runs-on: ubuntu-latest
-    # Só roda se o campo alterado for o "Status"
-    if: github.event.changes.field_value.field_name == 'Status'
     
     steps:
       - name: Sincronizar com o Projeto Central
         env:
           GH_TOKEN: ${{ secrets.PROJECT_SYNC_TOKEN }}
           ORGANIZATION: "strato-git"
-          GUARDA_CHUVA_NUMBER: 5 # <-- O número do seu projeto centralizado
+          PORTFOLIO_NUMBER: 5 
         
         run: |
-          # 1. Captura o ID global da Issue ou do PR que foi movido
-          CONTENT_NODE_ID="${{ github.event.project_item.content_node_id }}"
+          # 1. O evento project_card nos dá o ID da coluna antiga/nova. Vamos descobrir o nome textual dela.
+          COL_ID="${{ github.event.project_card.column_id }}"
+          STATUS_TEXT=$(gh api projects/columns/$COL_ID --jq '.name')
           
-          # 2. Pega o nome exato da nova coluna para onde o card foi (ex: "In Progress")
-          # O GitHub entrega o ID da opção antiga/nova. Vamos buscar o texto visível dela.
-          NEW_OPTION_ID="${{ github.event.project_item.field_values.Status.option_id }}"
+          echo "O novo status detectado é: $STATUS_TEXT"
           
-          echo "Buscando o nome textual do status atualizado..."
+          # 2. Captura a URL da Issue/PR vinculada ao card e extrai o Node ID global
+          CONTENT_URL="${{ github.event.project_card.content_url }}"
+          if [ -z "$CONTENT_URL" ] || [ "$CONTENT_URL" = "null" ]; then
+            echo "O card movido não está vinculado a uma Issue ou PR."
+            exit 0
+          fi
           
-          # Query para descobrir o nome da coluna baseado no ID dela
-          STATUS_TEXT=$(gh api graphql -f query='
-            query($item_id: ID!) {
-              node(id: $item_id) {
-                ... on ProjectV2Item {
-                  fieldValueByName(name: "Status") {
-                    ... on ProjectV2ItemFieldSingleSelectValue {
-                      name
-                    }
-                  }
-                }
-              }
-            }' -f item_id="$CONTENT_NODE_ID" --jq '.data.node.fieldValueByName.name')
+          CONTENT_NODE_ID=$(gh api $CONTENT_URL --jq '.node_id')
+          echo "Sincronizando item global ($CONTENT_NODE_ID) com o projeto Portfolio ($PORTFOLIO_NUMBER)..."
 
-          echo "O novo status é: $STATUS_TEXT"
-          echo "Sincronizando com o projeto Portfolio ($GUARDA_CHUVA_NUMBER)..."
-
-          # 3. Executa a mutação GraphQL para achar a issue no Portfolio e mudar o status dela lá também
+          # 3. Executa a query GraphQL para buscar a estrutura do Portfolio
           gh api graphql -f query='
-            mutation($org: String!, $project_num: Int!, $content_id: ID!, $status_name: String!) {
-              # Busca o projeto Portfolio
+            query($org: String!, $project_num: Int!) {
               organization(login: $org) {
                 projectV2(number: $project_num) {
                   id
-                  # Encontra o campo Status dentro dele
                   field(name: "Status") {
                     ... on ProjectV2SingleSelectField {
                       id
@@ -61,7 +47,6 @@ jobs:
                       }
                     }
                   }
-                  # Encontra o item correspondente à issue/PR dentro dele
                   items(first: 100) {
                     nodes {
                       id
@@ -73,15 +58,15 @@ jobs:
                   }
                 }
               }
-            }' -f org="$ORGANIZATION" -g project_num=$GUARDA_CHUVA_NUMBER -f content_id="$CONTENT_NODE_ID" -f status_name="$STATUS_TEXT" > projeto_info.json
+            }' -f org="$ORGANIZATION" -g project_num=$PORTFOLIO_NUMBER > projeto_info.json
 
-          # 4. Extração dos IDs internos via bash/jq
+          # 4. Extração dos IDs internos usando o nome da coluna coletado no passo 1
           PROJECT_ID=$(jq -r '.data.organization.projectV2.id' projeto_info.json)
           FIELD_ID=$(jq -r '.data.organization.projectV2.field.id' projeto_info.json)
           OPTION_ID=$(jq -r --arg status "$STATUS_TEXT" '.data.organization.projectV2.field.options[] | select(.name==$status) | .id' projeto_info.json)
           ITEM_ID=$(jq -r --arg content "$CONTENT_NODE_ID" '.data.organization.projectV2.items.nodes[] | select(.content.id==$content) | .id' projeto_info.json)
 
-          # Se o item existir no Portfolio, atualiza a coluna dele
+          # 5. Se o item existir no Portfolio, atualiza a coluna dele
           if [ "$ITEM_ID" != "null" ] && [ "$OPTION_ID" != "null" ]; then
             echo "Item encontrado no Portfolio. Atualizando coluna..."
             gh api graphql -f query='

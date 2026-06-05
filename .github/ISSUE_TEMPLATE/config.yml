@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 💬 Dúvida ou discussão
-    url: https://github.com/orgs/vezora-git/discussions
+    url: https://github.com/orgs/strato-git/discussions
     about: Para perguntas gerais, use as Discussions da organização.
   - name: 🔒 Vulnerabilidade de segurança
-    url: https://github.com/vezora-git/.github/security/advisories/new
+    url: https://github.com/strato-git/.github/security/advisories/new
     about: Reporte vulnerabilidades de forma privada, nunca como issue pública.

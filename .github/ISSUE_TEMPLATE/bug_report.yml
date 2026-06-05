@@ -1,5 +1,5 @@
 name: 🐞 Bug
-description: Reportar um defeito em um produto VEZORA
+description: Reportar um defeito em um produto STRATO
 labels: ["tipo:bug"]
 body:
   - type: markdown

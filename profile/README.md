@@ -1,6 +1,6 @@
-# VEZORA
+# STRATO
 
-Plataforma de produtos de software da VEZORA.
+Plataforma de produtos de software da STRATO.
 
 ## Produtos
 
@@ -14,7 +14,7 @@ Plataforma de produtos de software da VEZORA.
 
 - **Issues** vivem no repositório de cada produto.
 - O board operacional de cada produto fica no seu Project próprio.
-- A visão consolidada do portfólio está no Project **Portfólio VEZORA**.
+- A visão consolidada do portfólio está no Project **Portfólio STRATO**.
 - Padrões de issue, PR e labels são herdados deste repositório (`.github`).
 
 ## Convenções

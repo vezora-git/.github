@@ -1,0 +1,52 @@
+name: 🐞 Bug
+description: Reportar um defeito em um produto VEZORA
+labels: ["tipo:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar. Preencha os campos abaixo para acelerar o diagnóstico.
+  - type: dropdown
+    id: produto
+    attributes:
+      label: Produto
+      description: Em qual produto o bug ocorre?
+      options:
+        - Tessena
+        - Plenvo
+        - Transmissor NFCOM
+    validations:
+      required: true
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição
+      description: O que aconteceu? O que você esperava que acontecesse?
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Acessar '...'
+        2. Clicar em '...'
+        3. Ver o erro
+    validations:
+      required: true
+  - type: input
+    id: ambiente
+    attributes:
+      label: Ambiente
+      placeholder: produção / homologação / dev — versão / navegador / SO
+  - type: dropdown
+    id: severidade
+    attributes:
+      label: Severidade
+      options:
+        - P0 - Crítico (produção parada)
+        - P1 - Alto
+        - P2 - Médio
+        - P3 - Baixo
+    validations:
+      required: true

@@ -1,0 +1,38 @@
+name: 🔧 Débito Técnico
+description: Registrar dívida técnica, refatoração ou melhoria interna
+labels: ["tipo:debito-tecnico"]
+body:
+  - type: dropdown
+    id: produto
+    attributes:
+      label: Produto
+      options:
+        - Tessena
+        - Plenvo
+        - Transmissor NFCOM
+        - Plataforma / Compartilhado
+    validations:
+      required: true
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição
+      description: Qual o débito e por que ele importa?
+    validations:
+      required: true
+  - type: textarea
+    id: risco
+    attributes:
+      label: Risco se não tratado
+      placeholder: Impacto em performance, segurança, manutenibilidade...
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: true

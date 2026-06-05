@@ -1,0 +1,46 @@
+name: ✨ Feature
+description: Propor uma funcionalidade ou melhoria
+labels: ["tipo:feature"]
+body:
+  - type: dropdown
+    id: produto
+    attributes:
+      label: Produto
+      options:
+        - Tessena
+        - Plenvo
+        - Transmissor NFCOM
+    validations:
+      required: true
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema / Contexto
+      description: Que dor do usuário ou do negócio essa feature resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      description: O que você imagina como solução?
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Critérios de aceite
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: true

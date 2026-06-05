@@ -1,0 +1,46 @@
+# Sincronização de labels padronizadas em toda a organização.
+# Rode o workflow sync-labels.yml em cada repo para aplicar este conjunto.
+
+# --- Produto ---
+- name: "produto:tessena"
+  color: "1f6feb"
+  description: "Produto Tessena"
+- name: "produto:plenvo"
+  color: "8957e5"
+  description: "Produto Plenvo"
+- name: "produto:nfcom"
+  color: "238636"
+  description: "Transmissor NFCOM"
+
+# --- Tipo ---
+- name: "tipo:bug"
+  color: "d73a4a"
+  description: "Defeito"
+- name: "tipo:feature"
+  color: "0e8a16"
+  description: "Nova funcionalidade"
+- name: "tipo:debito-tecnico"
+  color: "fbca04"
+  description: "Dívida técnica / refatoração"
+
+# --- Prioridade ---
+- name: "P0"
+  color: "b60205"
+  description: "Crítico"
+- name: "P1"
+  color: "d93f0b"
+  description: "Alto"
+- name: "P2"
+  color: "fbca04"
+  description: "Médio"
+- name: "P3"
+  color: "c2e0c6"
+  description: "Baixo"
+
+# --- Status auxiliar ---
+- name: "needs-triage"
+  color: "ededed"
+  description: "Aguardando triagem"
+- name: "blocked"
+  color: "000000"
+  description: "Bloqueado por dependência"

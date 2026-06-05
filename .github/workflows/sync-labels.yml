@@ -1,0 +1,23 @@
+name: Sync Labels
+
+# Workflow reutilizável: chame a partir de cada repo para aplicar
+# o conjunto padronizado de labels definido em labels.yml.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/labels.yml
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: micnncim/action-label-syncer@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          manifest: .github/labels.yml
+          prune: false

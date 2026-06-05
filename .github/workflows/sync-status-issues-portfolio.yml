@@ -1,0 +1,101 @@
+name: Sincronizar Status com o Portfolio
+
+on:
+  project_item:
+    types: [edited]
+
+jobs:
+  sync-status:
+    runs-on: ubuntu-latest
+    # Só roda se o campo alterado for o "Status"
+    if: github.event.changes.field_value.field_name == 'Status'
+    
+    steps:
+      - name: Sincronizar com o Projeto Central
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_SYNC_TOKEN }}
+          ORGANIZATION: "strato-git"
+          GUARDA_CHUVA_NUMBER: 5 # <-- O número do seu projeto centralizado
+        
+        run: |
+          # 1. Captura o ID global da Issue ou do PR que foi movido
+          CONTENT_NODE_ID="${{ github.event.project_item.content_node_id }}"
+          
+          # 2. Pega o nome exato da nova coluna para onde o card foi (ex: "In Progress")
+          # O GitHub entrega o ID da opção antiga/nova. Vamos buscar o texto visível dela.
+          NEW_OPTION_ID="${{ github.event.project_item.field_values.Status.option_id }}"
+          
+          echo "Buscando o nome textual do status atualizado..."
+          
+          # Query para descobrir o nome da coluna baseado no ID dela
+          STATUS_TEXT=$(gh api graphql -f query='
+            query($item_id: ID!) {
+              node(id: $item_id) {
+                ... on ProjectV2Item {
+                  fieldValueByName(name: "Status") {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                    }
+                  }
+                }
+              }
+            }' -f item_id="$CONTENT_NODE_ID" --jq '.data.node.fieldValueByName.name')
+
+          echo "O novo status é: $STATUS_TEXT"
+          echo "Sincronizando com o projeto Portfolio ($GUARDA_CHUVA_NUMBER)..."
+
+          # 3. Executa a mutação GraphQL para achar a issue no Portfolio e mudar o status dela lá também
+          gh api graphql -f query='
+            mutation($org: String!, $project_num: Int!, $content_id: ID!, $status_name: String!) {
+              # Busca o projeto Portfolio
+              organization(login: $org) {
+                projectV2(number: $project_num) {
+                  id
+                  # Encontra o campo Status dentro dele
+                  field(name: "Status") {
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      options {
+                        id
+                        name
+                      }
+                    }
+                  }
+                  # Encontra o item correspondente à issue/PR dentro dele
+                  items(first: 100) {
+                    nodes {
+                      id
+                      content {
+                        ... on Issue { id }
+                        ... on PullRequest { id }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f org="$ORGANIZATION" -g project_num=$GUARDA_CHUVA_NUMBER -f content_id="$CONTENT_NODE_ID" -f status_name="$STATUS_TEXT" > projeto_info.json
+
+          # 4. Extração dos IDs internos via bash/jq
+          PROJECT_ID=$(jq -r '.data.organization.projectV2.id' projeto_info.json)
+          FIELD_ID=$(jq -r '.data.organization.projectV2.field.id' projeto_info.json)
+          OPTION_ID=$(jq -r --arg status "$STATUS_TEXT" '.data.organization.projectV2.field.options[] | select(.name==$status) | .id' projeto_info.json)
+          ITEM_ID=$(jq -r --arg content "$CONTENT_NODE_ID" '.data.organization.projectV2.items.nodes[] | select(.content.id==$content) | .id' projeto_info.json)
+
+          # Se o item existir no Portfolio, atualiza a coluna dele
+          if [ "$ITEM_ID" != "null" ] && [ "$OPTION_ID" != "null" ]; then
+            echo "Item encontrado no Portfolio. Atualizando coluna..."
+            gh api graphql -f query='
+              mutation($project: ID!, $item: ID!, $field: ID!, $option: ID!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $project,
+                  itemId: $item,
+                  fieldId: $field,
+                  value: { singleSelectOptionId: $option }
+                }) {
+                  projectV2Item { id }
+                }
+              }' -f project="$PROJECT_ID" -f item="$ITEM_ID" -f field="$FIELD_ID" -f option="$OPTION_ID"
+            echo "Sincronização concluída com sucesso!"
+          else
+            echo "Aviso: O item não foi encontrado no projeto Portfolio ou a coluna '$STATUS_TEXT' não existe lá."
+          fi
